@@ -38,8 +38,8 @@ class MCPClickHouseClient:
             self._command = uv_path
             self._args = ["run", "--with", "mcp-clickhouse", "--python", python_version, "mcp-clickhouse"]
         else:
-            self._command = sys.executable
-            self._args = ["-m", "mcp_clickhouse"]
+            self._command = shutil.which("mcp-clickhouse") or "mcp-clickhouse"
+            self._args = []
 
         self._session = None
         self._session_cm = None
@@ -56,7 +56,23 @@ class MCPClickHouseClient:
         read_stream, write_stream = await self._stdio_cm.__aenter__()
         self._session_cm = ClientSession(read_stream, write_stream)
         self._session = await self._session_cm.__aenter__()
-        await self._session.initialize()
+
+        # IMPORTANT: initialize() has no built-in timeout. If the
+        # mcp-clickhouse subprocess starts but never completes the MCP
+        # handshake (bad env var, polluted stdout, etc.) this call would
+        # otherwise hang forever — which blocks the FastAPI lifespan,
+        # which means Uvicorn never binds its port, which is what was
+        # causing Render's "Port scan timeout reached" failure. Wrapping
+        # it here turns a silent infinite hang into a clear, fast error.
+        try:
+            await asyncio.wait_for(self._session.initialize(), timeout=30.0)
+        except asyncio.TimeoutError:
+            raise MCPConnectionError(
+                "Timed out waiting for the mcp-clickhouse subprocess to complete "
+                "its MCP handshake (30s). It likely started but never responded — "
+                "check that CLICKHOUSE_HOST/PORT/SECURE are correct and that the "
+                "subprocess isn't blocked or writing non-protocol output to stdout."
+            )
 
     async def connect(self):
         """Call once at app startup to open a persistent MCP session."""
@@ -69,9 +85,15 @@ class MCPClickHouseClient:
         # that window and fail (SSL/connection errors, timeouts). Retry a
         # few times with backoff here, at startup, instead of making the
         # user's first real question eat the cold-start latency or fail.
+        #
+        # NOTE: each attempt uses a shorter, startup-specific timeout
+        # (20s) rather than the default 100s used for normal queries.
+        # Without this, a single stuck attempt could eat up to 100s —
+        # well past Render's port-scan window — before the retry loop
+        # even gets a chance to try again.
         for attempt in range(1, 4):
             try:
-                await self.execute_query("SELECT 1")
+                await self.execute_query("SELECT 1", timeout=20.0)
                 logger.info("ClickHouse warm-up query succeeded (attempt %d/3)", attempt)
                 break
             except Exception as e:
@@ -175,8 +197,8 @@ class MCPClickHouseClient:
             return "\n".join(text_parts) if text_parts else str(result.content)
         return "No results returned."
 
-    async def execute_query(self, sql: str) -> str:
-        return await self._call_tool("run_query", {"query": sql})
+    async def execute_query(self, sql: str, timeout: float = 100.0) -> str:
+        return await self._call_tool("run_query", {"query": sql}, timeout=timeout)
 
     async def list_databases(self) -> str:
         return await self._call_tool("list_databases", {})
