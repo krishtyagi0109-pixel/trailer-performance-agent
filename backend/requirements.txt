@@ -1,0 +1,24 @@
+# =============================================================================
+# Trailer Performance Agent — Python Dependencies
+# =============================================================================
+
+# Web framework + ASGI server
+fastapi[standard]>=0.115.0
+uvicorn[standard]>=0.30.0
+
+# Environment variable loading
+python-dotenv>=1.0.0
+
+# MCP Python SDK (client-side, for connecting to mcp-clickhouse)
+mcp>=1.0.0
+
+# Official ClickHouse MCP server — installed directly so Cloud Run doesn't
+# need `uv` to fetch it at runtime (avoids first-request cold-start timeout)
+mcp-clickhouse
+
+# Google Generative AI SDK (Gemini)
+google-genai>=1.0.0
+
+# Data validation (bundled with FastAPI, pinned for clarity)
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
