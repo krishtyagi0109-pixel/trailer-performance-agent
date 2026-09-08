@@ -50,7 +50,7 @@ class Settings(BaseSettings):
         description="Google Gemini API key for the generative AI model",
     )
     gemini_model: str = Field(
-        default="gemini-3.5-flash-lite",
+        default="gemini-3.1-flash-lite",
         description="Gemini model to use for agent reasoning",
     )
 
