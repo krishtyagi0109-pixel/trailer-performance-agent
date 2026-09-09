@@ -26,6 +26,14 @@ Recommendation systems (like YouTube's) quietly rank content *for viewers*. Trai
 
 **Every ClickHouse query goes through the official `mcp-clickhouse` MCP server** — never a direct SDK call — per the hackathon's ClickHouse track requirement. See `backend/app/mcp_client.py`. The backend keeps one persistent MCP session open for the life of the process, rather than spawning a new subprocess per query, to keep response times reasonable in production.
 
+### How it works
+
+1. User asks a plain-English question in the UI (e.g. *"Which director has the best audience sentiment?"*)
+2. The **FastAPI backend** (`/ask`) sends the question, plus the `movie_trailers` schema, to **Gemini 3.5-Flash-Lite**
+3. Gemini generates a SQL query tailored to that schema
+4. The backend runs the query through the **official `mcp-clickhouse` MCP server** against **ClickHouse Cloud** — never a raw SDK call
+5. The answer, along with the exact SQL used, is returned to the frontend — shown by default, with SQL available on demand via the "Show SQL used" toggle
+
 ---
 
 ## Data
