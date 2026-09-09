@@ -132,6 +132,7 @@ MIT — see `LICENSE`.
 
 ## 𝗥𝗼𝗹𝗲𝘀
 
-**The Director and Producer** — Krish Tyagi
+**The Director and Producer** — Krish Tyagi.
+
 **The Creative Head and Production Designer** — Kriti Garg
  
