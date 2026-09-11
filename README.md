@@ -1,6 +1,6 @@
 # 🎬 Trailer IQ — AI-Powered Movie Trailer Analytics
 
-Built for the **Agentic Cinema: The Blockbuster Hackathon** — ClickHouse track.
+
 
 Trailer IQ is an AI analytics assistant for a movie studio's marketing team. Ask a plain-English question — *"which director has the best audience sentiment?"* — and an agent writes real SQL, runs it live against real data in ClickHouse Cloud, and answers directly, with the exact SQL it used available on demand.
 
